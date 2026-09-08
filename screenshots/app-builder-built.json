@@ -1,0 +1,38 @@
+{
+  "url": "http://127.0.0.1:8081/",
+  "viewports": {
+    "desktop": {
+      "width": 1280,
+      "height": 800,
+      "status": 200,
+      "title": "Open Mile",
+      "hasCanvas": true,
+      "bodyTextLen": 234,
+      "bodyTextHash": "b33ca3d60755c2ac9c14a22cbee271fd710d38613f885fc5c66866ab90f59ce7",
+      "bodyTextPrefix": "FREERIDE Open Mile Endless desert. No rails. Arrow keys steer an",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-built.png"
+    },
+    "mobile": {
+      "width": 390,
+      "height": 844,
+      "status": 200,
+      "title": "Open Mile",
+      "hasCanvas": true,
+      "bodyTextLen": 234,
+      "bodyTextHash": "b33ca3d60755c2ac9c14a22cbee271fd710d38613f885fc5c66866ab90f59ce7",
+      "bodyTextPrefix": "FREERIDE Open Mile Endless desert. No rails. Arrow keys steer an",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-built-mobile.png"
+    }
+  },
+  "brandWarnings": [],
+  "authWarnings": [],
+  "verdictFile": "/workspace/screenshots/app-builder-built.json",
+  "divergesFromBaseline": false,
+  "baselineReasons": []
+}

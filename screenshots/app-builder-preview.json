@@ -1,0 +1,36 @@
+{
+  "url": "http://127.0.0.1:8080/",
+  "viewports": {
+    "desktop": {
+      "width": 1280,
+      "height": 800,
+      "status": 200,
+      "title": "Open Mile",
+      "hasCanvas": true,
+      "bodyTextLen": 449,
+      "bodyTextHash": "08b2898a98bfaefb4573ed361f22a16dc74d9cac3d1ab969c5852adef8db6fc4",
+      "bodyTextPrefix": "FREERIDE Open Mile Surfaces change how the car feels: loose dune",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-preview.png"
+    },
+    "mobile": {
+      "width": 390,
+      "height": 844,
+      "status": 200,
+      "title": "Open Mile",
+      "hasCanvas": true,
+      "bodyTextLen": 449,
+      "bodyTextHash": "08b2898a98bfaefb4573ed361f22a16dc74d9cac3d1ab969c5852adef8db6fc4",
+      "bodyTextPrefix": "FREERIDE Open Mile Surfaces change how the car feels: loose dune",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-preview-mobile.png"
+    }
+  },
+  "brandWarnings": [],
+  "authWarnings": [],
+  "verdictFile": "/workspace/screenshots/app-builder-preview.json"
+}
