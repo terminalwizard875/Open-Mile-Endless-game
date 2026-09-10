@@ -99,8 +99,8 @@ function Menu({
         <p className="mb-2 text-sm font-medium tracking-[0.28em] text-muted uppercase">Freeride</p>
         <h1 className="font-display text-6xl leading-none tracking-tight text-fg sm:text-7xl">Open Mile</h1>
         <p className="mt-3 max-w-md text-sm leading-relaxed text-muted sm:text-base">
-          Asphalt cuts across the dunes to spiral peaks. Ice slides, mesa sticks, sand slips.
-          Pick a car — the truck hits harder and boosts longer.
+          Asphalt cuts to spiral peaks. Red Mesa has a live volcano with lava rivers.
+          Pine Range is timbered. White Horizon is a giant ice climb — narrow, slick, no walls.
         </p>
 
         <div className="mt-6 grid grid-cols-2 gap-2">
@@ -146,6 +146,8 @@ function Menu({
           <li>Hold Space to drift</li>
           <li>Double-tap Space for nitro</li>
           <li>Follow the asphalt</li>
+          <li>Volcano in Red Mesa</li>
+          <li>White Horizon is brutal ice</li>
         </ul>
       </div>
     </div>

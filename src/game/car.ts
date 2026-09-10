@@ -203,11 +203,23 @@ export function stepCar(
 function applySlope(car: CarState, dt: number) {
   if (car.airborne) return;
   const m = mountainAt(car.x, car.z);
-  if (m && (m.onRoad || m.onSummit)) return;
-  if (trailAt(car.x, car.z)?.on) return;
+  const icePeak = !!(m && m.mountain.kind === "ice");
+  if (m && m.onLava) {
+    car.vx *= Math.exp(-1.8 * dt);
+    car.vz *= Math.exp(-1.8 * dt);
+    return;
+  }
+  if (m && (m.onRoad || m.onSummit) && !icePeak) return;
+  if (trailAt(car.x, car.z)?.on && !icePeak) return;
   const n = normalAt(car.x, car.z);
-  if (n.y > 0.88) return;
-  const slide = (0.88 - n.y) * 2.45;
+  if (icePeak && m && (m.onRoad || m.onSummit)) {
+    const slip = (1.06 - n.y) * 2.15 + 0.58 + Math.min(1.6, Math.abs(car.speed) * 0.02);
+    car.vx += n.x * GRAVITY * slip * dt;
+    car.vz += n.z * GRAVITY * slip * dt;
+    return;
+  }
+  if (n.y > 0.88 && !icePeak) return;
+  const slide = (0.88 - n.y) * (icePeak ? 5.6 : 2.45);
   car.vx += n.x * GRAVITY * slide * dt;
   car.vz += n.z * GRAVITY * slide * dt;
 }

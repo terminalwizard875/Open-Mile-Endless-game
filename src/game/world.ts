@@ -34,8 +34,11 @@ export function biomeAt(x: number, z: number): Biome {
   return "tundra";
 }
 
+export type MountainKind = "dune" | "volcano" | "forest" | "ice";
+
 export type Mountain = {
   name: string;
+  kind: MountainKind;
   x: number;
   z: number;
   radius: number;
@@ -52,6 +55,7 @@ export type Mountain = {
 export const MOUNTAINS: Mountain[] = [
   {
     name: "Dune Coil",
+    kind: "dune",
     x: 112,
     z: -84,
     radius: 84,
@@ -66,6 +70,7 @@ export const MOUNTAINS: Mountain[] = [
   },
   {
     name: "Sand Spire",
+    kind: "dune",
     x: -430,
     z: 270,
     radius: 86,
@@ -79,49 +84,8 @@ export const MOUNTAINS: Mountain[] = [
     base: 0,
   },
   {
-    name: "Clay Crown",
-    x: 940,
-    z: 640,
-    radius: 92,
-    height: 56,
-    summitR: 17,
-    roadW: 8.8,
-    turns: 3.35,
-    roadStartR: 80,
-    approach: 32,
-    rot: 0,
-    base: 0,
-  },
-  {
-    name: "Pine Helix",
-    x: -1520,
-    z: -1480,
-    radius: 88,
-    height: 52,
-    summitR: 16,
-    roadW: 8.4,
-    turns: 3.2,
-    roadStartR: 76,
-    approach: 30,
-    rot: 0,
-    base: 0,
-  },
-  {
-    name: "Frost Spire",
-    x: 2240,
-    z: 2080,
-    radius: 100,
-    height: 62,
-    summitR: 18,
-    roadW: 9,
-    turns: 3.5,
-    roadStartR: 86,
-    approach: 34,
-    rot: 0,
-    base: 0,
-  },
-  {
     name: "Twin Needle",
+    kind: "dune",
     x: 208,
     z: -252,
     radius: 64,
@@ -136,6 +100,7 @@ export const MOUNTAINS: Mountain[] = [
   },
   {
     name: "Coil Sister",
+    kind: "dune",
     x: 168,
     z: -26,
     radius: 48,
@@ -149,16 +114,122 @@ export const MOUNTAINS: Mountain[] = [
     base: 0,
   },
   {
-    name: "Red Stack",
-    x: 620,
-    z: 280,
+    name: "Ash Caldera",
+    kind: "volcano",
+    x: 1040,
+    z: 780,
+    radius: 168,
+    height: 118,
+    summitR: 34,
+    roadW: 8.0,
+    turns: 3.85,
+    roadStartR: 142,
+    approach: 38,
+    rot: 0,
+    base: 0,
+  },
+  {
+    name: "Cinder Stack",
+    kind: "volcano",
+    x: 640,
+    z: 1180,
+    radius: 88,
+    height: 64,
+    summitR: 16,
+    roadW: 7.4,
+    turns: 2.8,
+    roadStartR: 72,
+    approach: 26,
+    rot: 0,
+    base: 0,
+  },
+  {
+    name: "Soot Cone",
+    kind: "volcano",
+    x: 1320,
+    z: -380,
     radius: 72,
-    height: 46,
-    summitR: 13,
-    roadW: 8,
-    turns: 2.85,
+    height: 52,
+    summitR: 14,
+    roadW: 7.2,
+    turns: 2.45,
     roadStartR: 60,
-    approach: 24,
+    approach: 22,
+    rot: 0,
+    base: 0,
+  },
+  {
+    name: "Timber Crown",
+    kind: "forest",
+    x: -1480,
+    z: -1540,
+    radius: 142,
+    height: 88,
+    summitR: 20,
+    roadW: 8.6,
+    turns: 3.55,
+    roadStartR: 122,
+    approach: 34,
+    rot: 0,
+    base: 0,
+  },
+  {
+    name: "Mossback",
+    kind: "forest",
+    x: 1080,
+    z: -2260,
+    radius: 118,
+    height: 74,
+    summitR: 18,
+    roadW: 8.4,
+    turns: 3.25,
+    roadStartR: 100,
+    approach: 30,
+    rot: 0,
+    base: 0,
+  },
+  {
+    name: "Fir Spire",
+    kind: "forest",
+    x: -2140,
+    z: 920,
+    radius: 108,
+    height: 70,
+    summitR: 16,
+    roadW: 8.2,
+    turns: 3.1,
+    roadStartR: 92,
+    approach: 28,
+    rot: 0,
+    base: 0,
+  },
+  {
+    name: "White Horizon",
+    kind: "ice",
+    x: 2240,
+    z: 2380,
+    radius: 640,
+    height: 455,
+    summitR: 22,
+    roadW: 5.15,
+    turns: 6.9,
+    roadStartR: 560,
+    approach: 56,
+    rot: 0,
+    base: 0,
+  },
+  {
+    name: "Glass Nunatak",
+    kind: "ice",
+    x: 2780,
+    z: 1860,
+    radius: 248,
+    height: 186,
+    summitR: 16,
+    roadW: 5.6,
+    turns: 4.4,
+    roadStartR: 214,
+    approach: 36,
     rot: 0,
     base: 0,
   },
@@ -170,8 +241,10 @@ export type MountainHit = {
   blend: number;
   onRoad: boolean;
   onSummit: boolean;
+  onLava: boolean;
   stripe: boolean;
   name: string;
+  dist: number;
 };
 
 const _hit: MountainHit = {
@@ -180,8 +253,10 @@ const _hit: MountainHit = {
   blend: 0,
   onRoad: false,
   onSummit: false,
+  onLava: false,
   stripe: false,
   name: "",
+  dist: 0,
 };
 
 function wrapPi(a: number) {
@@ -192,11 +267,28 @@ function wrapPi(a: number) {
   return x;
 }
 
+export function craterR(m: Mountain) {
+  return m.kind === "volcano" ? m.summitR * 0.52 : 0;
+}
+
 function coneRise(m: Mountain, dist: number) {
+  if (m.kind === "volcano") {
+    const crater = craterR(m);
+    if (dist <= crater) return m.height * 0.62;
+    if (dist <= m.summitR) {
+      const t = (dist - crater) / Math.max(0.01, m.summitR - crater);
+      const s = t * t * (3 - 2 * t);
+      return m.height * (0.62 + 0.38 * s);
+    }
+    if (dist >= m.radius) return 0;
+    const u = 1 - (dist - m.summitR) / (m.radius - m.summitR);
+    return m.height * Math.pow(Math.max(0, u), 0.92);
+  }
   if (dist <= m.summitR) return m.height;
   if (dist >= m.radius) return 0;
   const u = 1 - (dist - m.summitR) / (m.radius - m.summitR);
-  return m.height * Math.pow(Math.max(0, u), 1.08);
+  const p = m.kind === "ice" ? 1.62 : m.kind === "forest" ? 1.22 : 1.08;
+  return m.height * Math.pow(Math.max(0, u), p);
 }
 
 export function mountainAt(x: number, z: number): MountainHit | null {
@@ -227,15 +319,29 @@ export function mountainAt(x: number, z: number): MountainHit | null {
 
   let rise = cone;
   let onRoad = false;
-  let onSummit = dist <= m.summitR;
+  const hole = craterR(m);
+  let onLava = m.kind === "volcano" && dist < hole;
+  if (!onLava && m.kind === "volcano" && dist > hole && dist < m.radius * 0.96) {
+    for (let i = 0; i < 3; i++) {
+      const a = m.rot + 1.05 + i * 2.094;
+      if (Math.abs(wrapPi(ang - a)) * dist < 4.4) {
+        onLava = true;
+        break;
+      }
+    }
+  }
+  let onSummit = m.kind === "volcano" ? dist <= m.summitR && dist >= hole && !onLava : dist <= m.summitR;
   let stripe = false;
 
-  if (onSummit) {
-    rise = m.height;
+  if (onLava) {
+    rise = cone;
+  } else if (onSummit) {
+    rise = m.kind === "volcano" ? cone : m.height;
   } else {
     let bestOff = Infinity;
     let bestCenter = dist;
     let bestTheta = ang;
+    let bestT = 0;
     const k0 = Math.floor((m.rot - ang) / twoPi) - 1;
     const k1 = k0 + Math.ceil(m.turns) + 4;
     for (let k = k0; k <= k1; k++) {
@@ -249,15 +355,18 @@ export function mountainAt(x: number, z: number): MountainHit | null {
         bestOff = off;
         bestCenter = rCenter;
         bestTheta = theta;
+        bestT = tc;
       }
     }
 
-    const half = m.roadW * 0.5;
-    const edge = 2.4;
+    const iceNarrow = m.kind === "ice" ? 1.1 - 0.52 * bestT : 1;
+    const half = m.roadW * 0.5 * iceNarrow;
+    const edge = m.kind === "ice" ? 1.6 : 2.4;
     if (bestOff < half + edge) {
       const roadH = coneRise(m, bestCenter);
+      const signed = dist - bestCenter;
       if (bestOff <= half) {
-        rise = roadH;
+        rise = m.kind === "ice" ? roadH - Math.max(0, signed) * 0.16 : roadH;
         onRoad = true;
         const along = (bestTheta - m.rot) * bestCenter;
         stripe = Math.abs(dist - bestCenter) < 0.42 && Math.sin(along * 0.55) > 0.28;
@@ -298,8 +407,10 @@ export function mountainAt(x: number, z: number): MountainHit | null {
   _hit.blend = blend;
   _hit.onRoad = onRoad;
   _hit.onSummit = onSummit;
+  _hit.onLava = onLava;
   _hit.stripe = stripe;
   _hit.name = m.name;
+  _hit.dist = dist;
   return _hit;
 }
 
@@ -405,11 +516,15 @@ function buildTrails() {
   const gateZ = coil.z + Math.cos(coil.rot) * (coil.roadStartR + 12);
   const sister = MOUNTAINS.find((m) => m.name === "Coil Sister")!;
   const twin = MOUNTAINS.find((m) => m.name === "Twin Needle")!;
-  const stack = MOUNTAINS.find((m) => m.name === "Red Stack")!;
+  const stack = MOUNTAINS.find((m) => m.name === "Cinder Stack")!;
   const sand = MOUNTAINS.find((m) => m.name === "Sand Spire")!;
-  const clay = MOUNTAINS.find((m) => m.name === "Clay Crown")!;
-  const pine = MOUNTAINS.find((m) => m.name === "Pine Helix")!;
-  const frost = MOUNTAINS.find((m) => m.name === "Frost Spire")!;
+  const clay = MOUNTAINS.find((m) => m.name === "Ash Caldera")!;
+  const soot = MOUNTAINS.find((m) => m.name === "Soot Cone")!;
+  const pine = MOUNTAINS.find((m) => m.name === "Timber Crown")!;
+  const frost = MOUNTAINS.find((m) => m.name === "White Horizon")!;
+  const nunatak = MOUNTAINS.find((m) => m.name === "Glass Nunatak")!;
+  const moss = MOUNTAINS.find((m) => m.name === "Mossback")!;
+  const fir = MOUNTAINS.find((m) => m.name === "Fir Spire")!;
   const g = (m: Mountain) => ({
     x: m.x + Math.sin(m.rot) * (m.roadStartR + 10),
     z: m.z + Math.cos(m.rot) * (m.roadStartR + 10),
@@ -477,6 +592,15 @@ function buildTrails() {
       ],
     },
     {
+      w: 7.0,
+      pts: [
+        { x: 450, z: 180 },
+        { x: 880, z: -90 },
+        { x: 1140, z: -250 },
+        g(soot),
+      ],
+    },
+    {
       w: 7.2,
       pts: [
         { x: -900, z: -980 },
@@ -486,12 +610,38 @@ function buildTrails() {
       ],
     },
     {
-      w: 7.4,
+      w: 7.0,
       pts: [
         { x: 1680, z: 1560 },
-        { x: 1940, z: 1800 },
-        { x: 2140, z: 1980 },
+        { x: 1860, z: 1860 },
+        { x: 2060, z: 2140 },
         g(frost),
+      ],
+    },
+    {
+      w: 6.6,
+      pts: [
+        g(frost),
+        { x: 2480, z: 2140 },
+        g(nunatak),
+      ],
+    },
+    {
+      w: 7.2,
+      pts: [
+        { x: 420, z: -1680 },
+        { x: 720, z: -1960 },
+        { x: 940, z: -2140 },
+        g(moss),
+      ],
+    },
+    {
+      w: 7.2,
+      pts: [
+        { x: -900, z: 280 },
+        { x: -1480, z: 560 },
+        { x: -1880, z: 760 },
+        g(fir),
       ],
     },
   ];
@@ -499,8 +649,18 @@ function buildTrails() {
 
 export function surfaceAt(x: number, z: number) {
   const m = mountainAt(x, z);
-  if (m && (m.onRoad || m.onSummit)) {
-    return { grip: 1.18, drag: 0.82, roll: 0.72, max: 1.06 };
+  if (m) {
+    if (m.onLava) return { grip: 0.32, drag: 2.1, roll: 2.4, max: 0.42 };
+    if (m.mountain.kind === "ice" && (m.onRoad || m.onSummit)) {
+      const slick = hash2(Math.floor(x * 0.18), Math.floor(z * 0.18), 4) > 0.28;
+      if (slick) return { grip: 0.06, drag: 0.18, roll: 0.16, max: 0.48 };
+      return { grip: 0.12, drag: 0.28, roll: 0.3, max: 0.62 };
+    }
+    if (m.onRoad || m.onSummit) {
+      if (m.mountain.kind === "volcano") return { grip: 1.05, drag: 0.95, roll: 0.9, max: 0.96 };
+      if (m.mountain.kind === "forest") return { grip: 1.08, drag: 0.9, roll: 0.8, max: 1 };
+      return { grip: 1.18, drag: 0.82, roll: 0.72, max: 1.06 };
+    }
   }
   const t = trailAt(x, z);
   if (t?.on) return { grip: 1.2, drag: 0.78, roll: 0.68, max: 1.08 };
@@ -546,6 +706,7 @@ function heightTundra(x: number, z: number) {
     Math.cos(z * 0.009) * 1.4 +
     Math.sin(x * 0.03 + z * 0.02) * 0.45 +
     Math.abs(Math.sin(x * 0.003 + z * 0.0025)) * 2.2 +
+    Math.pow(Math.abs(Math.sin(x * 0.0022) * Math.cos(z * 0.0018)), 5) * 9.5 +
     0.6
   );
 }
@@ -621,9 +782,24 @@ export const BIOME_SKY: Record<Biome, number> = {
 export function groundColor(x: number, z: number) {
   const m = mountainAt(x, z);
   if (m && m.blend > 0.08) {
-    if (m.onSummit) return m.stripe ? 0xcfc6b6 : 0xb9b1a4;
-    if (m.onRoad) return m.stripe ? 0xd8cbb0 : 0x2c2e32;
-    const rock = 0x4a3a32;
+    const kind = m.mountain.kind;
+    if (m.onLava) return 0xe24a18;
+    if (m.onSummit) {
+      if (kind === "ice") return 0xe8eef6;
+      if (kind === "volcano") return 0x2a1c18;
+      if (kind === "forest") return 0x6a5a48;
+      return m.stripe ? 0xcfc6b6 : 0xb9b1a4;
+    }
+    if (m.onRoad) {
+      if (kind === "ice") return m.stripe ? 0xe4eaf0 : 0x8a9aaa;
+      if (kind === "forest") return m.stripe ? 0xc4b49a : 0x3a3228;
+      if (kind === "volcano") return m.stripe ? 0xb85a3a : 0x2a2420;
+      return m.stripe ? 0xd8cbb0 : 0x2c2e32;
+    }
+    let rock = 0x4a3a32;
+    if (kind === "volcano") rock = 0x3a221c;
+    else if (kind === "forest") rock = 0x3a4f34;
+    else if (kind === "ice") rock = 0xc5d2de;
     const n = hash2(Math.floor(x * 0.35), Math.floor(z * 0.35), 3);
     const shade = 0.72 + n * 0.38;
     const r = ((rock >> 16) & 255) * shade;
@@ -760,15 +936,30 @@ function addMountainProps(out: Obstacle[], ix: number, iz: number) {
     if (m.x + pad < x0 || m.x - pad > x1 || m.z + pad < z0 || m.z - pad > z1) continue;
 
     if (m.x >= x0 && m.x < x1 && m.z >= z0 && m.z < z1) {
-      out.push({
-        x: m.x,
-        z: m.z,
-        y: heightAt(m.x, m.z),
-        r: 2.2,
-        kind: "nitro",
-        rot: 0,
-        scale: 1,
-      });
+      if (m.kind === "volcano") {
+        const rim = (m.summitR + craterR(m)) * 0.5;
+        const nx = m.x + Math.sin(m.rot + 0.9) * rim;
+        const nz = m.z + Math.cos(m.rot + 0.9) * rim;
+        out.push({
+          x: nx,
+          z: nz,
+          y: heightAt(nx, nz),
+          r: 2.2,
+          kind: "nitro",
+          rot: 0,
+          scale: 1,
+        });
+      } else {
+        out.push({
+          x: m.x,
+          z: m.z,
+          y: heightAt(m.x, m.z),
+          r: 2.2,
+          kind: "nitro",
+          rot: 0,
+          scale: 1,
+        });
+      }
     }
 
     const gateX = m.x + Math.sin(m.rot) * (m.roadStartR + 10);
@@ -787,40 +978,117 @@ function addMountainProps(out: Obstacle[], ix: number, iz: number) {
       }
     }
 
-    const steps = Math.floor(m.turns * 78);
-    const rInner = m.summitR + m.roadW * 0.28;
-    for (let i = 0; i <= steps; i++) {
-      const t = i / steps;
-      const theta = m.rot + t * m.turns * Math.PI * 2;
-      const rCenter = m.roadStartR + (rInner - m.roadStartR) * t;
-      const outerR = rCenter + m.roadW * 0.5;
-      const x = m.x + Math.sin(theta) * outerR;
-      const z = m.z + Math.cos(theta) * outerR;
-      if (x < x0 || x >= x1 || z < z0 || z >= z1) continue;
-      out.push({
-        x,
-        z,
-        y: heightAt(x, z),
-        r: 0.55,
-        kind: "curb",
-        rot: theta + Math.PI / 2,
-        scale: 1,
-      });
+    if (m.kind !== "ice") {
+      const steps = Math.floor(m.turns * (m.kind === "volcano" ? 70 : 78));
+      const rInner = m.summitR + m.roadW * 0.28;
+      for (let i = 0; i <= steps; i++) {
+        const t = i / steps;
+        const theta = m.rot + t * m.turns * Math.PI * 2;
+        const rCenter = m.roadStartR + (rInner - m.roadStartR) * t;
+        const outerR = rCenter + m.roadW * 0.5;
+        const x = m.x + Math.sin(theta) * outerR;
+        const z = m.z + Math.cos(theta) * outerR;
+        if (x < x0 || x >= x1 || z < z0 || z >= z1) continue;
+        out.push({
+          x,
+          z,
+          y: heightAt(x, z),
+          r: 0.55,
+          kind: "curb",
+          rot: theta + Math.PI / 2,
+          scale: 1,
+        });
+      }
+    } else {
+      const steps = Math.floor(m.turns * (m.name === "White Horizon" ? 28 : 36));
+      const rInner = m.summitR + m.roadW * 0.28;
+      for (let i = 0; i <= steps; i++) {
+        if (i % 4 !== 0) continue;
+        const t = i / steps;
+        const theta = m.rot + t * m.turns * Math.PI * 2;
+        const rCenter = m.roadStartR + (rInner - m.roadStartR) * t;
+        const outerR = rCenter + m.roadW * (0.55 + t * 0.35);
+        const x = m.x + Math.sin(theta) * outerR;
+        const z = m.z + Math.cos(theta) * outerR;
+        if (x < x0 || x >= x1 || z < z0 || z >= z1) continue;
+        out.push({
+          x,
+          z,
+          y: heightAt(x, z),
+          r: 0.85,
+          kind: "ice",
+          rot: theta,
+          scale: 1.25 + t * 0.5,
+        });
+      }
     }
 
-    for (const side of [-1, 1] as const) {
-      const px = m.x + Math.sin(m.rot) * (m.roadStartR + 2) + Math.cos(m.rot) * side * (m.roadW * 0.52);
-      const pz = m.z + Math.cos(m.rot) * (m.roadStartR + 2) - Math.sin(m.rot) * side * (m.roadW * 0.52);
-      if (px < x0 || px >= x1 || pz < z0 || pz >= z1) continue;
-      out.push({
-        x: px,
-        z: pz,
-        y: heightAt(px, pz),
-        r: 0.7,
-        kind: "curb",
-        rot: m.rot,
-        scale: 1.6,
-      });
+    if (m.kind !== "ice") {
+      for (const side of [-1, 1] as const) {
+        const px = m.x + Math.sin(m.rot) * (m.roadStartR + 2) + Math.cos(m.rot) * side * (m.roadW * 0.52);
+        const pz = m.z + Math.cos(m.rot) * (m.roadStartR + 2) - Math.sin(m.rot) * side * (m.roadW * 0.52);
+        if (px < x0 || px >= x1 || pz < z0 || pz >= z1) continue;
+        out.push({
+          x: px,
+          z: pz,
+          y: heightAt(px, pz),
+          r: 0.7,
+          kind: "curb",
+          rot: m.rot,
+          scale: 1.6,
+        });
+      }
+    }
+
+    if (m.kind === "forest") {
+      for (let i = 0; i < 36; i++) {
+        const u = hash2(ix, iz + Math.floor(m.x), 1300 + i);
+        const v = hash2(ix + Math.floor(m.z), iz, 1400 + i);
+        const ang = u * Math.PI * 2;
+        const dist = m.summitR + 8 + v * Math.max(10, m.radius - m.summitR - 14);
+        const x = m.x + Math.sin(ang) * dist;
+        const z = m.z + Math.cos(ang) * dist;
+        if (x < x0 || x >= x1 || z < z0 || z >= z1) continue;
+        const hit = mountainAt(x, z);
+        if (hit && (hit.onRoad || hit.onSummit || hit.onLava)) continue;
+        if (tooClose(out, x, z, 4.2)) continue;
+        const sc = 1.35 + hash2(ix, iz, 1500 + i) * 1.35;
+        out.push({
+          x,
+          z,
+          y: heightAt(x, z),
+          r: 0.55 * sc,
+          kind: "pine",
+          rot: ang,
+          scale: sc,
+        });
+      }
+    }
+
+    if (m.kind === "ice") {
+      const shards = m.name === "White Horizon" ? 22 : 10;
+      for (let i = 0; i < shards; i++) {
+        const u = hash2(ix, iz, 1700 + i);
+        const v = hash2(ix, iz, 1800 + i);
+        const ang = u * Math.PI * 2;
+        const dist = m.summitR + 12 + v * (m.radius - m.summitR - 20);
+        const x = m.x + Math.sin(ang) * dist;
+        const z = m.z + Math.cos(ang) * dist;
+        if (x < x0 || x >= x1 || z < z0 || z >= z1) continue;
+        const hit = mountainAt(x, z);
+        if (hit && hit.onRoad) continue;
+        if (tooClose(out, x, z, 5)) continue;
+        const sc = 1.1 + hash2(ix, iz, 1900 + i) * 1.6;
+        out.push({
+          x,
+          z,
+          y: heightAt(x, z),
+          r: 0.7 * sc,
+          kind: "ice",
+          rot: ang,
+          scale: sc,
+        });
+      }
     }
   }
 }

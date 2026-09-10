@@ -15515,6 +15515,92 @@ var BoxGeometry = class BoxGeometry extends BufferGeometry {
 	}
 };
 /**
+* A simple shape of Euclidean geometry. It is constructed from a
+* number of triangular segments that are oriented around a central point and
+* extend as far out as a given radius. It is built counter-clockwise from a
+* start angle and a given central angle. It can also be used to create
+* regular polygons, where the number of segments determines the number of
+* sides.
+*
+* ```js
+* const geometry = new THREE.CircleGeometry( 5, 32 );
+* const material = new THREE.MeshBasicMaterial( { color: 0xffff00 } );
+* const circle = new THREE.Mesh( geometry, material );
+* scene.add( circle )
+* ```
+*
+* @augments BufferGeometry
+* @demo scenes/geometry-browser.html#CircleGeometry
+*/
+var CircleGeometry = class CircleGeometry extends BufferGeometry {
+	/**
+	* Constructs a new circle geometry.
+	*
+	* @param {number} [radius=1] - Radius of the circle.
+	* @param {number} [segments=32] - Number of segments (triangles), minimum = `3`.
+	* @param {number} [thetaStart=0] - Start angle for first segment in radians.
+	* @param {number} [thetaLength=Math.PI*2] - The central angle, often called theta,
+	* of the circular sector in radians. The default value results in a complete circle.
+	*/
+	constructor(radius = 1, segments = 32, thetaStart = 0, thetaLength = Math.PI * 2) {
+		super();
+		this.type = "CircleGeometry";
+		/**
+		* Holds the constructor parameters that have been
+		* used to generate the geometry. Any modification
+		* after instantiation does not change the geometry.
+		*
+		* @type {Object}
+		*/
+		this.parameters = {
+			radius,
+			segments,
+			thetaStart,
+			thetaLength
+		};
+		segments = Math.max(3, segments);
+		const indices = [];
+		const vertices = [];
+		const normals = [];
+		const uvs = [];
+		const vertex = new Vector3();
+		const uv = new Vector2();
+		vertices.push(0, 0, 0);
+		normals.push(0, 0, 1);
+		uvs.push(.5, .5);
+		for (let s = 0, i = 3; s <= segments; s++, i += 3) {
+			const segment = thetaStart + s / segments * thetaLength;
+			vertex.x = radius * Math.cos(segment);
+			vertex.y = radius * Math.sin(segment);
+			vertices.push(vertex.x, vertex.y, vertex.z);
+			normals.push(0, 0, 1);
+			uv.x = (vertices[i] / radius + 1) / 2;
+			uv.y = (vertices[i + 1] / radius + 1) / 2;
+			uvs.push(uv.x, uv.y);
+		}
+		for (let i = 1; i <= segments; i++) indices.push(i, i + 1, 0);
+		this.setIndex(indices);
+		this.setAttribute("position", new Float32BufferAttribute(vertices, 3));
+		this.setAttribute("normal", new Float32BufferAttribute(normals, 3));
+		this.setAttribute("uv", new Float32BufferAttribute(uvs, 2));
+	}
+	copy(source) {
+		super.copy(source);
+		this.parameters = Object.assign({}, source.parameters);
+		return this;
+	}
+	/**
+	* Factory method for creating an instance of this class from the given
+	* JSON object.
+	*
+	* @param {Object} data - A JSON object representing the serialized geometry.
+	* @return {CircleGeometry} A new instance.
+	*/
+	static fromJSON(data) {
+		return new CircleGeometry(data.radius, data.segments, data.thetaStart, data.thetaLength);
+	}
+};
+/**
 * A geometry class for representing a cylinder.
 *
 * ```js
@@ -16127,6 +16213,145 @@ var DodecahedronGeometry = class DodecahedronGeometry extends PolyhedronGeometry
 	}
 };
 /**
+* Creates meshes with axial symmetry like vases. The lathe rotates around the Y axis.
+*
+* ```js
+* const points = [];
+* for ( let i = 0; i < 10; i ++ ) {
+* 	points.push( new THREE.Vector2( Math.sin( i * 0.2 ) * 10 + 5, ( i - 5 ) * 2 ) );
+* }
+* const geometry = new THREE.LatheGeometry( points );
+* const material = new THREE.MeshBasicMaterial( { color: 0xffff00 } );
+* const lathe = new THREE.Mesh( geometry, material );
+* scene.add( lathe );
+* ```
+*
+* @augments BufferGeometry
+* @demo scenes/geometry-browser.html#LatheGeometry
+*/
+var LatheGeometry = class LatheGeometry extends BufferGeometry {
+	/**
+	* Constructs a new lathe geometry.
+	*
+	* @param {Array<Vector2|Vector3>} [points] - An array of points in 2D space. The x-coordinate of each point
+	* must be greater than zero.
+	* @param {number} [segments=12] - The number of circumference segments to generate.
+	* @param {number} [phiStart=0] - The starting angle in radians.
+	* @param {number} [phiLength=Math.PI*2] - The radian (0 to 2PI) range of the lathed section 2PI is a
+	* closed lathe, less than 2PI is a portion.
+	*/
+	constructor(points = [
+		new Vector2(0, -.5),
+		new Vector2(.5, 0),
+		new Vector2(0, .5)
+	], segments = 12, phiStart = 0, phiLength = Math.PI * 2) {
+		super();
+		this.type = "LatheGeometry";
+		/**
+		* Holds the constructor parameters that have been
+		* used to generate the geometry. Any modification
+		* after instantiation does not change the geometry.
+		*
+		* @type {Object}
+		*/
+		this.parameters = {
+			points,
+			segments,
+			phiStart,
+			phiLength
+		};
+		segments = Math.floor(segments);
+		phiLength = clamp(phiLength, 0, Math.PI * 2);
+		const indices = [];
+		const vertices = [];
+		const uvs = [];
+		const initNormals = [];
+		const normals = [];
+		const inverseSegments = 1 / segments;
+		const vertex = new Vector3();
+		const uv = new Vector2();
+		const normal = new Vector3();
+		const curNormal = new Vector3();
+		const prevNormal = new Vector3();
+		let dx = 0;
+		let dy = 0;
+		for (let j = 0; j <= points.length - 1; j++) switch (j) {
+			case 0:
+				dx = points[j + 1].x - points[j].x;
+				dy = points[j + 1].y - points[j].y;
+				normal.x = dy * 1;
+				normal.y = -dx;
+				normal.z = dy * 0;
+				prevNormal.copy(normal);
+				normal.normalize();
+				initNormals.push(normal.x, normal.y, normal.z);
+				break;
+			case points.length - 1:
+				initNormals.push(prevNormal.x, prevNormal.y, prevNormal.z);
+				break;
+			default:
+				dx = points[j + 1].x - points[j].x;
+				dy = points[j + 1].y - points[j].y;
+				normal.x = dy * 1;
+				normal.y = -dx;
+				normal.z = dy * 0;
+				curNormal.copy(normal);
+				normal.x += prevNormal.x;
+				normal.y += prevNormal.y;
+				normal.z += prevNormal.z;
+				normal.normalize();
+				initNormals.push(normal.x, normal.y, normal.z);
+				prevNormal.copy(curNormal);
+		}
+		for (let i = 0; i <= segments; i++) {
+			const phi = phiStart + i * inverseSegments * phiLength;
+			const sin = Math.sin(phi);
+			const cos = Math.cos(phi);
+			for (let j = 0; j <= points.length - 1; j++) {
+				vertex.x = points[j].x * sin;
+				vertex.y = points[j].y;
+				vertex.z = points[j].x * cos;
+				vertices.push(vertex.x, vertex.y, vertex.z);
+				uv.x = i / segments;
+				uv.y = j / (points.length - 1);
+				uvs.push(uv.x, uv.y);
+				const x = initNormals[3 * j + 0] * sin;
+				const y = initNormals[3 * j + 1];
+				const z = initNormals[3 * j + 0] * cos;
+				normals.push(x, y, z);
+			}
+		}
+		for (let i = 0; i < segments; i++) for (let j = 0; j < points.length - 1; j++) {
+			const base = j + i * points.length;
+			const a = base;
+			const b = base + points.length;
+			const c = base + points.length + 1;
+			const d = base + 1;
+			indices.push(a, b, d);
+			indices.push(c, d, b);
+		}
+		this.setIndex(indices);
+		this.setAttribute("position", new Float32BufferAttribute(vertices, 3));
+		this.setAttribute("uv", new Float32BufferAttribute(uvs, 2));
+		this.setAttribute("normal", new Float32BufferAttribute(normals, 3));
+	}
+	copy(source) {
+		super.copy(source);
+		this.parameters = Object.assign({}, source.parameters);
+		return this;
+	}
+	/**
+	* Factory method for creating an instance of this class from the given
+	* JSON object.
+	*
+	* @param {Object} data - A JSON object representing the serialized geometry.
+	* @return {LatheGeometry} A new instance.
+	*/
+	static fromJSON(data) {
+		return new LatheGeometry(data.points, data.segments, data.phiStart, data.phiLength);
+	}
+};
+/**
 * A geometry class for representing an octahedron.
 *
 * ```js
@@ -16303,6 +16528,113 @@ var PlaneGeometry = class PlaneGeometry extends BufferGeometry {
 	*/
 	static fromJSON(data) {
 		return new PlaneGeometry(data.width, data.height, data.widthSegments, data.heightSegments);
+	}
+};
+/**
+* A class for generating a sphere geometry.
+*
+* ```js
+* const geometry = new THREE.SphereGeometry( 15, 32, 16 );
+* const material = new THREE.MeshBasicMaterial( { color: 0xffff00 } );
+* const sphere = new THREE.Mesh( geometry, material );
+* scene.add( sphere );
+* ```
+*
+* @augments BufferGeometry
+* @demo scenes/geometry-browser.html#SphereGeometry
+*/
+var SphereGeometry = class SphereGeometry extends BufferGeometry {
+	/**
+	* Constructs a new sphere geometry.
+	*
+	* @param {number} [radius=1] - The sphere radius.
+	* @param {number} [widthSegments=32] - The number of horizontal segments. Minimum value is `3`.
+	* @param {number} [heightSegments=16] - The number of vertical segments. Minimum value is `2`.
+	* @param {number} [phiStart=0] - The horizontal starting angle in radians.
+	* @param {number} [phiLength=Math.PI*2] - The horizontal sweep angle size.
+	* @param {number} [thetaStart=0] - The vertical starting angle in radians.
+	* @param {number} [thetaLength=Math.PI] - The vertical sweep angle size.
+	*/
+	constructor(radius = 1, widthSegments = 32, heightSegments = 16, phiStart = 0, phiLength = Math.PI * 2, thetaStart = 0, thetaLength = Math.PI) {
+		super();
+		this.type = "SphereGeometry";
+		/**
+		* Holds the constructor parameters that have been
+		* used to generate the geometry. Any modification
+		* after instantiation does not change the geometry.
+		*
+		* @type {Object}
+		*/
+		this.parameters = {
+			radius,
+			widthSegments,
+			heightSegments,
+			phiStart,
+			phiLength,
+			thetaStart,
+			thetaLength
+		};
+		widthSegments = Math.max(3, Math.floor(widthSegments));
+		heightSegments = Math.max(2, Math.floor(heightSegments));
+		const thetaEnd = Math.min(thetaStart + thetaLength, Math.PI);
+		let index = 0;
+		const grid = [];
+		const vertex = new Vector3();
+		const normal = new Vector3();
+		const indices = [];
+		const vertices = [];
+		const normals = [];
+		const uvs = [];
+		for (let iy = 0; iy <= heightSegments; iy++) {
+			const verticesRow = [];
+			const v = iy / heightSegments;
+			const theta = thetaStart + v * thetaLength;
+			const y = radius * Math.cos(theta);
+			const ringRadius = Math.sqrt(radius * radius - y * y);
+			let uOffset = 0;
+			if (iy === 0 && thetaStart === 0) uOffset = .5 / widthSegments;
+			else if (iy === heightSegments && thetaEnd === Math.PI) uOffset = -.5 / widthSegments;
+			for (let ix = 0; ix <= widthSegments; ix++) {
+				const u = ix / widthSegments;
+				const phi = phiStart + u * phiLength;
+				vertex.x = -ringRadius * Math.cos(phi);
+				vertex.y = y;
+				vertex.z = ringRadius * Math.sin(phi);
+				vertices.push(vertex.x, vertex.y, vertex.z);
+				normal.copy(vertex).normalize();
+				normals.push(normal.x, normal.y, normal.z);
+				uvs.push(u + uOffset, 1 - v);
+				verticesRow.push(index++);
+			}
+			grid.push(verticesRow);
+		}
+		for (let iy = 0; iy < heightSegments; iy++) for (let ix = 0; ix < widthSegments; ix++) {
+			const a = grid[iy][ix + 1];
+			const b = grid[iy][ix];
+			const c = grid[iy + 1][ix];
+			const d = grid[iy + 1][ix + 1];
+			if (iy !== 0 || thetaStart > 0) indices.push(a, b, d);
+			if (iy !== heightSegments - 1 || thetaEnd < Math.PI) indices.push(b, c, d);
+		}
+		this.setIndex(indices);
+		this.setAttribute("position", new Float32BufferAttribute(vertices, 3));
+		this.setAttribute("normal", new Float32BufferAttribute(normals, 3));
+		this.setAttribute("uv", new Float32BufferAttribute(uvs, 2));
+	}
+	copy(source) {
+		super.copy(source);
+		this.parameters = Object.assign({}, source.parameters);
+		return this;
+	}
+	/**
+	* Factory method for creating an instance of this class from the given
+	* JSON object.
+	*
+	* @param {Object} data - A JSON object representing the serialized geometry.
+	* @return {SphereGeometry} A new instance.
+	*/
+	static fromJSON(data) {
+		return new SphereGeometry(data.radius, data.widthSegments, data.heightSegments, data.phiStart, data.phiLength, data.thetaStart, data.thetaLength);
 	}
 };
 /**
@@ -19608,6 +19940,119 @@ var PerspectiveCamera = class extends Camera {
 		if (this.view !== null) data.object.view = Object.assign({}, this.view);
 		data.object.filmGauge = this.filmGauge;
 		data.object.filmOffset = this.filmOffset;
+		return data;
+	}
+};
+/**
+* Represents the shadow configuration of point lights.
+*
+* @augments LightShadow
+*/
+var PointLightShadow = class extends LightShadow {
+	/**
+	* Constructs a new point light shadow.
+	*/
+	constructor() {
+		super(new PerspectiveCamera(90, 1, .5, 500));
+		/**
+		* This flag can be used for type testing.
+		*
+		* @type {boolean}
+		* @readonly
+		* @default true
+		*/
+		this.isPointLightShadow = true;
+	}
+};
+/**
+* A light that gets emitted from a single point in all directions. A common
+* use case for this is to replicate the light emitted from a bare
+* lightbulb.
+*
+* This light can cast shadows - see the {@link PointLightShadow} for details.
+*
+* ```js
+* const light = new THREE.PointLight( 0xff0000, 1, 100 );
+* light.position.set( 50, 50, 50 );
+* scene.add( light );
+* ```
+*
+* @augments Light
+*/
+var PointLight = class extends Light {
+	/**
+	* Constructs a new point light.
+	*
+	* @param {(number|Color|string)} [color=0xffffff] - The light's color.
+	* @param {number} [intensity=1] - The light's strength/intensity measured in candela (cd).
+	* @param {number} [distance=0] - Maximum range of the light. `0` means no limit.
+	* @param {number} [decay=2] - The amount the light dims along the distance of the light.
+	*/
+	constructor(color, intensity, distance = 0, decay = 2) {
+		super(color, intensity);
+		/**
+		* This flag can be used for type testing.
+		*
+		* @type {boolean}
+		* @readonly
+		* @default true
+		*/
+		this.isPointLight = true;
+		this.type = "PointLight";
+		/**
+		* When distance is zero, light will attenuate according to inverse-square
+		* law to infinite distance. When distance is non-zero, light will attenuate
+		* according to inverse-square law until near the distance cutoff, where it
+		* will then attenuate quickly and smoothly to 0. Inherently, cutoffs are not
+		* physically correct.
+		*
+		* @type {number}
+		* @default 0
+		*/
+		this.distance = distance;
+		/**
+		* The amount the light dims along the distance of the light. In context of
+		* physically-correct rendering the default value should not be changed.
+		*
+		* @type {number}
+		* @default 2
+		*/
+		this.decay = decay;
+		/**
+		* This property holds the light's shadow configuration.
+		*
+		* @type {PointLightShadow}
+		*/
+		this.shadow = new PointLightShadow();
+	}
+	/**
+	* The light's power. Power is the luminous power of the light measured in lumens (lm).
+	* Changing the power will also change the light's intensity.
+	*
+	* @type {number}
+	*/
+	get power() {
+		return this.intensity * 4 * Math.PI;
+	}
+	set power(power) {
+		this.intensity = power / (4 * Math.PI);
+	}
+	dispose() {
+		super.dispose();
+		this.shadow.dispose();
+	}
+	copy(source, recursive) {
+		super.copy(source, recursive);
+		this.distance = source.distance;
+		this.decay = source.decay;
+		this.shadow = source.shadow.clone();
+		return this;
+	}
+	toJSON(meta) {
+		const data = super.toJSON(meta);
+		data.object.distance = this.distance;
+		data.object.decay = this.decay;
+		data.object.shadow = this.shadow.toJSON();
 		return data;
 	}
 };
@@ -31677,4 +32122,4 @@ var WebGLRenderer = class {
 	}
 };
 //#endregion
-export { Scene as C, Vector3 as E, SRGBColorSpace as S, TorusGeometry as T, Object3D as _, ConeGeometry as a, PlaneGeometry as b, DodecahedronGeometry as c, Group as d, HemisphereLight as f, MeshStandardMaterial as g, Mesh as h, Color as i, DynamicDrawUsage as l, Matrix4 as m, BoxGeometry as n, CylinderGeometry as o, InstancedMesh as p, BufferAttribute as r, DirectionalLight as s, WebGLRenderer as t, Fog as u, OctahedronGeometry as v, Timer as w, Quaternion as x, PerspectiveCamera as y };
+export { Vector2 as A, PointLight as C, SphereGeometry as D, Scene as E, Timer as O, PlaneGeometry as S, SRGBColorSpace as T, Mesh as _, Color as a, OctahedronGeometry as b, DirectionalLight as c, Fog as d, Group as f, Matrix4 as g, LatheGeometry as h, CircleGeometry as i, Vector3 as j, TorusGeometry as k, DodecahedronGeometry as l, InstancedMesh as m, BoxGeometry as n, ConeGeometry as o, HemisphereLight as p, BufferAttribute as r, CylinderGeometry as s, WebGLRenderer as t, DynamicDrawUsage as u, MeshStandardMaterial as v, Quaternion as w, PerspectiveCamera as x, Object3D as y };

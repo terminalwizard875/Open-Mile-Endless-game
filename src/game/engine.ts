@@ -8,11 +8,13 @@ import {
   TILE,
   biomeAt,
   chunkHitsMountain,
+  craterR,
   groundColor,
   heightAt,
   mountainAt,
   obstaclesForChunk,
   type Biome,
+  type Mountain,
   type Obstacle,
 } from "./world";
 import {
@@ -47,7 +49,7 @@ export type EngineHooks = {
 const BEST_KEY = "openmile-best";
 const FIXED = 1 / 60;
 const LOOK = 5;
-const CHUNK_RANGE = 4;
+const CHUNK_RANGE = 5;
 
 type Handle = {
   start: () => void;
@@ -91,9 +93,9 @@ export function createEngine(canvas: HTMLCanvasElement, hooks: EngineHooks): Han
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(BIOME_SKY.desert);
-  scene.fog = new THREE.Fog(BIOME_FOG.desert, 80, 420);
+  scene.fog = new THREE.Fog(BIOME_FOG.desert, 80, 480);
 
-  const camera = new THREE.PerspectiveCamera(62, 1, 0.15, 820);
+  const camera = new THREE.PerspectiveCamera(62, 1, 0.15, 3400);
   camera.position.set(0, 6, 14);
 
   const hemi = new THREE.HemisphereLight(0xf3d7b4, 0x2c2118, 0.72);
@@ -150,8 +152,8 @@ export function createEngine(canvas: HTMLCanvasElement, hooks: EngineHooks): Han
   const CRATE_N = 800;
   const BARREL_N = 500;
   const CACTUS_N = 500;
-  const PINE_N = 1100;
-  const ICE_N = 600;
+  const PINE_N = 2800;
+  const ICE_N = 1400;
   const RAMP_N = 280;
   const FAN_N = 240;
   const BLADE_N = 480;
@@ -223,21 +225,115 @@ export function createEngine(canvas: HTMLCanvasElement, hooks: EngineHooks): Han
     metalness: 0.18,
   });
   const beacons: THREE.Group[] = [];
+  const impostors: { mesh: THREE.Object3D; mountain: Mountain }[] = [];
+  const lavaPools: THREE.Mesh[] = [];
+  const smokePuffs: { mesh: THREE.Mesh; base: number; phase: number; ox: number; oz: number }[] = [];
+  const lavaMat = new THREE.MeshStandardMaterial({
+    color: 0xff4a18,
+    emissive: 0xe23b12,
+    emissiveIntensity: 1.55,
+    roughness: 0.4,
+    metalness: 0.05,
+  });
+
+  function addImpostor(m: Mountain) {
+    if (m.kind === "dune" && m.radius < 90) return;
+    let geo: THREE.BufferGeometry;
+    let mat: THREE.MeshStandardMaterial;
+    if (m.kind === "volcano") {
+      const crater = craterR(m);
+      const pts = [
+        new THREE.Vector2(m.radius, 0),
+        new THREE.Vector2(m.summitR, m.height),
+        new THREE.Vector2(crater, m.height * 0.62),
+        new THREE.Vector2(0, m.height * 0.62),
+      ];
+      geo = new THREE.LatheGeometry(pts, 20);
+      mat = new THREE.MeshStandardMaterial({ color: 0x3a221c, roughness: 0.92, flatShading: true });
+    } else if (m.kind === "ice") {
+      geo = new THREE.ConeGeometry(m.radius, m.height, 24, 1, false);
+      mat = new THREE.MeshStandardMaterial({
+        color: 0xe8f2fa,
+        emissive: 0x7a90a4,
+        emissiveIntensity: 0.22,
+        roughness: 0.28,
+        metalness: 0.14,
+        flatShading: true,
+      });
+    } else if (m.kind === "forest") {
+      geo = new THREE.ConeGeometry(m.radius, m.height, 16, 1, true);
+      mat = new THREE.MeshStandardMaterial({ color: 0x3d5a3a, roughness: 0.9, flatShading: true });
+    } else {
+      geo = new THREE.ConeGeometry(m.radius, m.height, 16, 1, true);
+      mat = new THREE.MeshStandardMaterial({ color: 0x8a6a4e, roughness: 0.95, flatShading: true });
+    }
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.receiveShadow = true;
+    if (m.kind === "volcano") {
+      mesh.position.set(m.x, m.base, m.z);
+    } else {
+      mesh.position.set(m.x, m.base + m.height * 0.5, m.z);
+    }
+    scene.add(mesh);
+    impostors.push({ mesh, mountain: m });
+  }
+
   for (const m of MOUNTAINS) {
+    addImpostor(m);
     const g = new THREE.Group();
-    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.11, 5.4, 8), beaconMat);
-    pole.position.y = 2.7;
-    pole.castShadow = true;
-    const flag = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.95, 0.05), flagMat);
-    flag.position.set(0.82, 4.85, 0);
-    flag.castShadow = true;
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(5.1, 0.16, 7, 28), ringMat);
-    ring.rotation.x = Math.PI / 2;
-    ring.position.y = 0.16;
-    const cap = new THREE.Mesh(new THREE.CylinderGeometry(1.3, 1.5, 0.22, 16), ringMat);
-    cap.position.y = 0.08;
-    g.add(pole, flag, ring, cap);
-    g.position.set(m.x, heightAt(m.x, m.z), m.z);
+    if (m.kind === "volcano") {
+      const crater = craterR(m);
+      const lava = new THREE.Mesh(new THREE.CircleGeometry(crater * 0.92, 22), lavaMat);
+      lava.rotation.x = -Math.PI / 2;
+      lava.position.set(m.x, m.base + m.height * 0.62 + 0.18, m.z);
+      scene.add(lava);
+      lavaPools.push(lava);
+      const glow = new THREE.PointLight(0xff6a2a, 4.2, 72, 1.4);
+      glow.position.set(m.x, m.base + m.height * 0.72, m.z);
+      scene.add(glow);
+      const smokeMat = new THREE.MeshStandardMaterial({
+        color: 0x4a403c,
+        emissive: 0x2a2018,
+        emissiveIntensity: 0.25,
+        transparent: true,
+        opacity: 0.32,
+        depthWrite: false,
+      });
+      for (let i = 0; i < 5; i++) {
+        const puff = new THREE.Mesh(new THREE.SphereGeometry(7 + i * 2.4, 10, 8), smokeMat.clone());
+        puff.position.set(m.x, m.base + m.height * 0.7 + 10 + i * 7, m.z);
+        scene.add(puff);
+        smokePuffs.push({
+          mesh: puff,
+          base: m.base + m.height * 0.7 + 8,
+          phase: i * 0.7,
+          ox: m.x,
+          oz: m.z,
+        });
+      }
+      const rimX = m.x + Math.sin(m.rot + 0.6) * ((m.summitR + crater) * 0.5);
+      const rimZ = m.z + Math.cos(m.rot + 0.6) * ((m.summitR + crater) * 0.5);
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.11, 5.4, 8), beaconMat);
+      pole.position.y = 2.7;
+      const flag = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.95, 0.05), flagMat);
+      flag.position.set(0.82, 4.85, 0);
+      g.add(pole, flag);
+      g.position.set(rimX, heightAt(rimX, rimZ), rimZ);
+    } else {
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.11, m.kind === "ice" ? 7.2 : 5.4, 8), beaconMat);
+      pole.position.y = m.kind === "ice" ? 3.6 : 2.7;
+      pole.castShadow = true;
+      const flag = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.95, 0.05), flagMat);
+      flag.position.set(0.82, m.kind === "ice" ? 6.6 : 4.85, 0);
+      flag.castShadow = true;
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(m.kind === "ice" ? 7.2 : 5.1, 0.16, 7, 28), ringMat);
+      ring.rotation.x = Math.PI / 2;
+      ring.position.y = 0.16;
+      const cap = new THREE.Mesh(new THREE.CylinderGeometry(1.3, 1.5, 0.22, 16), ringMat);
+      cap.position.y = 0.08;
+      g.add(pole, flag, ring, cap);
+      g.position.set(m.x, heightAt(m.x, m.z), m.z);
+    }
     scene.add(g);
     beacons.push(g);
   }
@@ -480,8 +576,19 @@ export function createEngine(canvas: HTMLCanvasElement, hooks: EngineHooks): Han
     (scene.fog as THREE.Fog).color.copy(_fog);
     (scene.background as THREE.Color).copy(_sky);
     const fog = scene.fog as THREE.Fog;
-    fog.near = 70 + car.y * 0.45;
-    fog.far = 380 + car.y * 6;
+    if (biome === "tundra") {
+      fog.near = 90 + car.y * 0.12;
+      fog.far = 1680 + car.y * 2.2;
+    } else if (biome === "forest") {
+      fog.near = 80 + car.y * 0.25;
+      fog.far = 1180 + car.y * 3.2;
+    } else if (biome === "canyon") {
+      fog.near = 70 + car.y * 0.35;
+      fog.far = 720 + car.y * 4.2;
+    } else {
+      fog.near = 70 + car.y * 0.45;
+      fog.far = 430 + car.y * 5.5;
+    }
     _hemiA.setHex(biome === "tundra" ? 0xdde6ee : biome === "forest" ? 0xc5d4c4 : biome === "canyon" ? 0xf0c4a0 : 0xf3d7b4);
     hemi.color.lerp(_hemiA, k);
   }
@@ -525,7 +632,10 @@ export function createEngine(canvas: HTMLCanvasElement, hooks: EngineHooks): Han
     const mtn = mountainAt(car.x, car.z);
     let biomeName = BIOME_LABEL[biome];
     if (mtn && mtn.blend > 0.4) {
-      biomeName = mtn.onSummit ? `${mtn.name} · summit` : mtn.onRoad ? `${mtn.name} · spiral` : mtn.name;
+      if (mtn.onLava) biomeName = `${mtn.name} · caldera`;
+      else if (mtn.onSummit) biomeName = `${mtn.name} · summit`;
+      else if (mtn.onRoad) biomeName = `${mtn.name} · spiral`;
+      else biomeName = mtn.name;
     }
     hooks.onHud({
       speedKmh: kmh,
@@ -585,6 +695,22 @@ export function createEngine(canvas: HTMLCanvasElement, hooks: EngineHooks): Han
     for (const g of beacons) {
       const flag = g.children[1];
       if (flag) flag.rotation.z = flap * 0.16;
+    }
+    for (const { mesh, mountain: mtn } of impostors) {
+      const d = Math.hypot(car.x - mtn.x, car.z - mtn.z);
+      mesh.visible = d > mtn.radius + CHUNK_RANGE * TILE * 0.35;
+    }
+    const now = performance.now() * 0.001;
+    lavaMat.emissiveIntensity = 1.25 + Math.sin(now * 2.2) * 0.45;
+    for (const puff of smokePuffs) {
+      const t = now * 0.35 + puff.phase;
+      puff.mesh.position.y = puff.base + 10 + (t % 18);
+      puff.mesh.position.x = puff.ox + Math.sin(t) * 4;
+      puff.mesh.position.z = puff.oz + Math.cos(t * 0.65) * 4;
+      const fade = 1 - ((t % 18) / 18);
+      (puff.mesh.material as THREE.MeshStandardMaterial).opacity = 0.08 + fade * 0.28;
+      const s = 0.7 + (1 - fade) * 1.4;
+      puff.mesh.scale.setScalar(s);
     }
     updateAtmosphere(dt, biomeAt(car.x, car.z));
     updateCamera(dt, mode === "menu");
@@ -694,6 +820,22 @@ export function createEngine(canvas: HTMLCanvasElement, hooks: EngineHooks): Han
         if (mesh.geometry) mesh.geometry.dispose();
       });
     }
+    for (const { mesh } of impostors) {
+      scene.remove(mesh);
+      const mm = mesh as THREE.Mesh;
+      mm.geometry?.dispose();
+      (mm.material as THREE.Material)?.dispose();
+    }
+    for (const lava of lavaPools) {
+      scene.remove(lava);
+      lava.geometry.dispose();
+    }
+    lavaMat.dispose();
+    for (const puff of smokePuffs) {
+      scene.remove(puff.mesh);
+      puff.mesh.geometry.dispose();
+      (puff.mesh.material as THREE.Material).dispose();
+    }
     renderer.dispose();
   }
 
@@ -708,8 +850,14 @@ export function createEngine(canvas: HTMLCanvasElement, hooks: EngineHooks): Han
       car.z = z;
       car.y = heightAt(x, z) + specOf(car.vehicle).ride;
       car.vy = 0;
+      car.vx = 0;
+      car.vz = 0;
       car.airborne = false;
       car.landGrace = 0;
+    },
+    getXZ: () => ({ x: car.x, z: car.z, y: car.y }),
+    setYaw: (y: number) => {
+      car.yaw = y;
     },
   };
   window.__controlsTest = probe;
